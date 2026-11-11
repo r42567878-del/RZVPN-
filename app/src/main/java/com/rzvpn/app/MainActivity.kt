@@ -24,84 +24,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
-import androidx.room.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.launch
 
-// --- ۱. ساختار پایگاه داده محلی (Room) ---
-@Entity(tableName = "products")
-data class Product(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+data class VpnProduct(
+    val id: Long,
     val name: String,
     val price: String,
-    val desc: String,
-    val isAvailable: Boolean = true
+    val desc: String
 )
 
-@Dao
-interface ProductDao {
-    @Query("SELECT * FROM products")
-    fun getAll(): Flow<List<Product>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(p: Product)
-}
-
-@Database(entities = [Product::class], version = 1, exportSchema = false)
-abstract class AppDb : RoomDatabase() {
-    abstract fun dao(): ProductDao
-}
-
-// --- ۲. رنگ‌های نئونی اختصاصی RZVPN ---
 val DarkNavy = Color(0xFF070B19)
 val NeonBlue = Color(0xFF00E5FF)
 val NeonGreen = Color(0xFF00E676)
 
-// --- ۳. اکتیویتی اصلی برنامه ---
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // راه‌اندازی دیتابیس
-        val db = Room.databaseBuilder(
-            applicationContext,
-            AppDb::class.java,
-            "rzvpn.db"
-        ).fallbackToDestructiveMigration().build()
-        
-        val dao = db.dao()
-
-        // اضافه کردن خودکار بسته‌های پاسارگاد و ربکا
-        lifecycleScope.launch(Dispatchers.IO) {
-            dao.insert(
-                Product(
-                    id = 1,
-                    name = "پاسارگاد نامحدود",
-                    price = "۵٬۴۹۹٬۰۰۰ تومان",
-                    desc = "سرویس VIP سرعت بالا، تانل اختصاصی بدون قطعی مناسب همه اپراتورها"
-                )
-            )
-            dao.insert(
-                Product(
-                    id = 2,
-                    name = "ربکا نامحدود",
-                    price = "۵٬۹۹۹٬۰۰۰ تومان",
-                    desc = "آی‌پی ثابت فوق پایدار مخصوص وب‌گردی و ترید با تضمین امنیت"
-                )
-            )
-        }
+        val products = listOf(
+            VpnProduct(1, "پاسارگاد نامحدود", "۵٬۴۹۹٬۰۰۰ تومان", "سرویس VIP سرعت بالا، تانل اختصاصی بدون قطعی مناسب همه اپراتورها"),
+            VpnProduct(2, "ربکا نامحدود", "۵٬۹۹۹٬۰۰۰ تومان", "آی‌پی ثابت فوق پایدار مخصوص وب‌گردی و ترید با تضمین امنیت")
+        )
 
         setContent {
-            // فعال‌سازی حالت راست‌چین (فارسی)
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = DarkNavy
                 ) {
                     var selectedTab by remember { mutableStateOf(0) }
-                    val products by dao.getAll().collectAsState(initial = emptyList())
 
                     Scaffold(
                         bottomBar = {
@@ -136,7 +86,6 @@ class MainActivity : ComponentActivity() {
                                 .padding(16.dp)
                         ) {
                             if (selectedTab == 0) {
-                                // صفحه لیست محصولات فروشگاه
                                 LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                                     item {
                                         Text(
@@ -194,7 +143,7 @@ class MainActivity : ComponentActivity() {
                                                         fontSize = 15.sp
                                                     )
                                                     Button(
-                                                        onClick = { /* آماده برای درگاه یا کارت‌به‌کارت */ },
+                                                        onClick = { /* سفارش */ },
                                                         colors = ButtonDefaults.buttonColors(
                                                             containerColor = NeonBlue
                                                         ),
@@ -212,6 +161,43 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             } else {
-                                // صفحه کارت ویزیت دیجیتال و نمایندگی
                                 Column(
                                     modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VerifiedUser,
+                                        contentDescription = null,
+                                        tint = NeonBlue,
+                                        modifier = Modifier.size(64.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = "کارت ویزیت دیجیتال RZVPN",
+                                        color = Color.White,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "کد معرف و نمایندگی: RZ-8890",
+                                        color = NeonGreen,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "پورسانت آنی ۱۵٪ برای هر معرفی فعال",
+                                        color = Color.LightGray,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
